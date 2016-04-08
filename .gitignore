@@ -1,3 +1,9 @@
+.gradle/
+.idea/
+build/
+mobile-commons/build/
+mobile-core/build/
+mobile-phone-pro/build/
 tigase-mobile-lib/bin/
 tigase-mobile-lib/gen/
 tigase-mobile-commons/bin/
