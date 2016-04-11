@@ -1,3 +1,8 @@
+build/
+.gradle/
+.idea/
+tigase-mobile-commons/build/
+tigase-mobile-messenger/build/
 tigase-mobile-commons/bin
 tigase-mobile-commons/gen
 tigase-mobile-commons/target

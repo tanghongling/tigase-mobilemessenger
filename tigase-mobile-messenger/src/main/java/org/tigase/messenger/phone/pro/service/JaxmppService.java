@@ -56,8 +56,8 @@ import tigase.jaxmpp.core.client.Connector.StanzaReceivedHandler;
 import tigase.jaxmpp.core.client.Connector.State;
 import tigase.jaxmpp.core.client.JID;
 import tigase.jaxmpp.core.client.JaxmppCore;
-import tigase.jaxmpp.core.client.JaxmppCore.ConnectedHandler;
-import tigase.jaxmpp.core.client.JaxmppCore.DisconnectedHandler;
+import tigase.jaxmpp.core.client.JaxmppCore.LoggedInHandler;
+import tigase.jaxmpp.core.client.JaxmppCore.LoggedOutHandler;
 import tigase.jaxmpp.core.client.MultiJaxmpp;
 import tigase.jaxmpp.core.client.SessionObject;
 import tigase.jaxmpp.core.client.XMPPException.ErrorCondition;
@@ -85,12 +85,8 @@ import tigase.jaxmpp.core.client.xmpp.modules.presence.PresenceStore;
 import tigase.jaxmpp.core.client.xmpp.modules.roster.RosterModule;
 import tigase.jaxmpp.core.client.xmpp.modules.vcard.VCard;
 import tigase.jaxmpp.core.client.xmpp.modules.vcard.VCardModule;
-import tigase.jaxmpp.core.client.xmpp.stanzas.ErrorElement;
-import tigase.jaxmpp.core.client.xmpp.stanzas.IQ;
-import tigase.jaxmpp.core.client.xmpp.stanzas.Presence;
+import tigase.jaxmpp.core.client.xmpp.stanzas.*;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Presence.Show;
-import tigase.jaxmpp.core.client.xmpp.stanzas.Stanza;
-import tigase.jaxmpp.core.client.xmpp.stanzas.StanzaType;
 import tigase.jaxmpp.core.client.xmpp.utils.delay.XmppDelay;
 import tigase.jaxmpp.j2se.J2SEPresenceStore;
 import tigase.jaxmpp.j2se.J2SESessionObject;
@@ -130,8 +126,8 @@ import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
 import android.util.Log;
 
-public class JaxmppService extends Service implements ConnectedHandler, DisconnectedHandler {
-	
+public class JaxmppService extends Service implements LoggedInHandler, LoggedOutHandler {
+
 	private class Stub extends IJaxmppService.Stub {
 
 		@Override
@@ -139,12 +135,12 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			SharedPreferences prefs = Preferences.getDefaultSharedPreferences(JaxmppService.this);
 			JaxmppService.this.prefChangeListener.onSharedPreferenceChanged(prefs, key);
 		}
-		
+
 		@Override
 		public void updateConfiguration() throws RemoteException {
 			JaxmppService.this.updateJaxmppInstances();
 		}
-		
+
 		@Override
 		public List<String> getAccounts(boolean connectedOnly) {
 			List<String> accounts = new ArrayList<String>();
@@ -155,7 +151,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			}
 			return accounts;
 		}
-		
+
 		@Override
 		public boolean connect(String accountJidStr) throws RemoteException {
 			if (accountJidStr == null || accountJidStr.length() == 0) {
@@ -192,13 +188,13 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			Log.v(TAG, "Disconnecting account " + accountJidStr);
 			disconnectJaxmpp(jaxmpp, true);
 			return true;
-		}		
-		
+		}
+
 		@Override
 		public boolean isStarted() {
 			return started;
 		}
-		
+
 		@Override
 		public boolean isConnected(String accountJidStr) throws RemoteException {
 			BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
@@ -234,11 +230,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 						} catch (XMLException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
-						}						
+						}
 					}
 				}
 			}
-			
+
 			return result;
 		}
 
@@ -255,7 +251,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				if (p != null) {
 					result = new CPresence(p);
 				}
-			} catch (XMLException ex) {				
+			} catch (XMLException ex) {
 			}
 			if (result == null) {
 				result = new CPresence(null, null, CPresence.OFFLINE, null);
@@ -268,11 +264,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				throws RemoteException {
 			try {
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
-				JID jid = JID.jidInstance(jidStr);			
+				JID jid = JID.jidInstance(jidStr);
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
 				if (jaxmpp == null)
 					return false;
-				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);		
+				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);
 				boolean chatExists = messageModule.getChatManager().isChatOpenFor(jid.getBareJid());
 				if (!chatExists) {
 					messageModule.createChat(jid);
@@ -292,14 +288,14 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				String body) throws RemoteException {
 			return sendMessageExt(accountJidStr, jidStr, threadId, body, null);
 		}
-		
+
 		@Override
 		public boolean sendMessageExt(String accountJidStr, String jidStr, String threadId,
 				String body, List<ParcelableElement> additionalElems) throws RemoteException {
 			try {
-				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);		
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
-				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);	
+				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);
 				JID jid = JID.jidInstance(jidStr);
 				Chat chat = messageModule.getChatManager().getChat(jid, threadId);
 				if (chat != null) {
@@ -311,7 +307,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				Log.e(TAG, "EXCEPTION", e);
-			}			
+			}
 			return false;
 		}
 
@@ -319,9 +315,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 					throws RemoteException {
 			try {
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
-				JID jid = JID.jidInstance(jidStr);			
+				JID jid = JID.jidInstance(jidStr);
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
-				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);	
+				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);
 				Chat chat = messageModule.getChatManager().getChat(jid, threadId);
 				if (chat != null)
 					messageModule.close(chat);
@@ -329,7 +325,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				Log.e(TAG, "EXCEPTION", e);
-			}		
+			}
 		}
 
 		@Override
@@ -340,9 +336,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
 				final JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
 				final BareJID jid = BareJID.bareJIDInstance(jidStr);
-				new Thread() { 
+				new Thread() {
 					public void run() {
-						
+
 						try {
 				jaxmpp.getModule(RosterModule.class).getRosterStore().add(jid, name, groups, new AsyncCallback() {
 
@@ -410,7 +406,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		public boolean hasStreamFeature(String accountJidStr, String elemName, String streamFeatureXmlns)
 				throws RemoteException {
 			try {
-				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);		
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
 				final Element sf = StreamFeaturesModule.getStreamFeatures(jaxmpp.getSessionObject());
 				if (sf == null) return false;
@@ -432,9 +428,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				throws RemoteException {
 			try {
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
-				JID roomJid = JID.jidInstance(roomJidStr);			
+				JID roomJid = JID.jidInstance(roomJidStr);
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
-				MucModule mucModule = jaxmpp.getModule(MucModule.class);	
+				MucModule mucModule = jaxmpp.getModule(MucModule.class);
 				Room room = mucModule.getRoom(roomJid.getBareJid());
 				boolean chatExists = room != null;
 				if (!chatExists) {
@@ -461,7 +457,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				throws RemoteException {
 			try {
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
-				JID roomJid = JID.jidInstance(roomJidStr);			
+				JID roomJid = JID.jidInstance(roomJidStr);
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
 				MucModule mucModule = jaxmpp.getModule(MucModule.class);
 				Room room = mucModule.getRoom(roomJid.getBareJid());
@@ -475,15 +471,15 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				Log.e(TAG, "EXCEPTION", e);
-			}				
+			}
 			return false;
 		}
-		
+
 		@Override
 		public boolean sendRoomMessage(String accountJidStr, String roomJidStr, String msg) {
 			try {
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
-				JID roomJid = JID.jidInstance(roomJidStr);			
+				JID roomJid = JID.jidInstance(roomJidStr);
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
 				MucModule mucModule = jaxmpp.getModule(MucModule.class);
 				Room room = mucModule.getRoom(roomJid.getBareJid());
@@ -497,8 +493,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				Log.e(TAG, "EXCEPTION", e);
-			}				
-			return false;			
+			}
+			return false;
 		}
 
 		@Override
@@ -506,7 +502,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				throws RemoteException {
 			try {
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
-				JID roomJid = JID.jidInstance(roomJidStr);			
+				JID roomJid = JID.jidInstance(roomJidStr);
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
 				MucModule mucModule = jaxmpp.getModule(MucModule.class);
 				Room room = mucModule.getRoom(roomJid.getBareJid());
@@ -522,7 +518,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				Log.e(TAG, "EXCEPTION", e);
-			}				
+			}
 			return new Occupant[0];
 		}
 
@@ -531,17 +527,17 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				throws RemoteException {
 			try {
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
-				JID jid = JID.jidInstance(jidStr);			
+				JID jid = JID.jidInstance(jidStr);
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
 				if (jaxmpp == null)
 					return "";
-				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);	
+				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);
 				Chat chat = messageModule.getChatManager().getChat(jid, threadId);
 				if (chat != null) {
 					ChatStateExtension ext = messageModule.getExtensionChain().getExtension(ChatStateExtension.class);
 					if (ext != null) {
 						ChatState state = ext.getRecipientChatState(chat);
-						if (state != null) 
+						if (state != null)
 							return state.name();
 					}
 				}
@@ -549,7 +545,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				Log.e(TAG, "EXCEPTION", e);
-			}		
+			}
 			return "";
 		}
 
@@ -562,11 +558,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 					return;
 				ChatState state = ChatState.valueOf(chatStateStr);
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
-				JID jid = JID.jidInstance(jidStr);			
+				JID jid = JID.jidInstance(jidStr);
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
 				if (jaxmpp == null)
 					return;
-				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);	
+				MessageModule messageModule = jaxmpp.getModule(MessageModule.class);
 				Chat chat = messageModule.getChatManager().getChat(jid, threadId);
 				if (chat != null) {
 					ChatStateExtension ext = messageModule.getExtensionChain().getExtension(ChatStateExtension.class);
@@ -578,14 +574,14 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				Log.e(TAG, "EXCEPTION", e);
-			}			
+			}
 		}
 
 		@Override
 		public void retrieveVCard(String accountJidStr, String jidStr, final XmppCallback callback) throws RemoteException {
 			try {
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
-				JID jid = JID.jidInstance(jidStr);			
+				JID jid = JID.jidInstance(jidStr);
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
 				VCardModule vcardModule = jaxmpp.getModule(VCardModule.class);
 				vcardModule.retrieveVCard(jid, new XmppCallbackWrapper(callback));
@@ -593,11 +589,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				Log.e(TAG, "EXCEPTION", e);
 			}
 		}
-		
+
 		@Override
 		public void publishVCard(String accountJidStr, final ParcelableElement vcardEl, final XmppCallback callback) throws RemoteException {
 			try {
-				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);	
+				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
 				final IQ iq = IQ.create();
 				iq.setType(StanzaType.set);
@@ -605,15 +601,15 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				jaxmpp.send(iq, new XmppCallbackWrapper(callback));
 			} catch (Exception e) {
 				Log.e(TAG, "EXCEPTION", e);
-			}			
+			}
 		}
-		
+
 		@Override
 		public boolean sendFile(String accountJidStr, String jidStr, String uriStr, String mimetype) {
 			try {
 				Log.v(TAG, "send file called for account = " + accountJidStr + " for jid " + jidStr);
 				BareJID accountJid = BareJID.bareJIDInstance(accountJidStr);
-				JID jid = JID.jidInstance(jidStr);			
+				JID jid = JID.jidInstance(jidStr);
 				JaxmppCore jaxmpp = multiJaxmpp.get(accountJid);
 				if (jid.getResource() == null) {
 					JID fullJid = FileTransferUtility.getBestJidForFeatures(jaxmpp, jid.getBareJid(), FileTransferUtility.FEATURES);
@@ -634,9 +630,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				e.printStackTrace();
 				Log.e(TAG, "EXCEPTION", e);
 				return false;
-			}		
+			}
 		}
-		
+
 		@Override
 		public void publishBookmarks(String accountJidStr, List<ParcelableElement> items, XmppCallback callback) {
 			try {
@@ -651,7 +647,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				Log.e(TAG, "EXCEPTION", e);
 			}
 		}
-		
+
 		@Override
 		public void retrieveBookmarks(String accountJidStr, XmppCallback callback) {
 			try {
@@ -664,11 +660,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				Log.e(TAG, "EXCEPTION", e);
-			}			
+			}
 		}
 	}
-	
-	private class MessageHandler implements MessageModule.MessageReceivedHandler, MessageCarbonsModule.CarbonReceivedHandler, 
+
+	private class MessageHandler implements MessageModule.MessageReceivedHandler, MessageCarbonsModule.CarbonReceivedHandler,
 			ChatStateExtension.ChatStateChangedHandler {
 
 		@Override
@@ -691,7 +687,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				storeMessage(sessionObject, chat, msg, false);
 			} catch (Exception ex) {
 				Log.e(TAG, "Exception handling received carbon message", ex);
-			}			
+			}
 		}
 
 		@Override
@@ -702,15 +698,15 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				Uri uri = chat != null
 						? Uri.parse(org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider.OPEN_CHATS_URI + "/" + chat.getId())
 						: Uri.parse(org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider.OPEN_CHATS_URI);
-				context.getContentResolver().notifyChange(uri, null);				
+				context.getContentResolver().notifyChange(uri, null);
 			} catch (Exception ex) {
 				Log.e(TAG, "Exception handling received chat state change event", ex);
-			}			
+			}
 		}
-		
+
 	}
-	
-	private class MucHandler implements MucModule.MucMessageReceivedHandler, MucModule.YouJoinedHandler, 
+
+	private class MucHandler implements MucModule.MucMessageReceivedHandler, MucModule.YouJoinedHandler,
 			MucModule.MessageErrorHandler, MucModule.StateChangeHandler, MucModule.PresenceErrorHandler {
 
 		@Override
@@ -722,7 +718,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 					return;
 				String body = msg.getBody();
 				Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + Uri.encode(room.getRoomJid().toString()));
-				
+
 				ContentValues values = new ContentValues();
 				values.put(ChatTableMetaData.FIELD_JID, room.getRoomJid().toString());
 				values.put(ChatTableMetaData.FIELD_AUTHOR_NICKNAME, nickname);
@@ -730,9 +726,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				values.put(ChatTableMetaData.FIELD_BODY, body);
 				values.put(ChatTableMetaData.FIELD_STATE, 0);
 				values.put(ChatTableMetaData.FIELD_ACCOUNT, sessionObject.getUserBareJid().toString());
-				
+
 				getContentResolver().insert(uri, values);
-				
+
 				if (activeChatJid == null || !activeChatJid.getBareJid().equals(room.getRoomJid())) {
 					if (body.toLowerCase().contains(room.getNickname().toLowerCase())) {
 						notificationHelper.notifyNewMucMessage(sessionObject, msg);
@@ -741,7 +737,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			} catch (Exception ex) {
 				Log.e(TAG, "Exception handling received MUC message", ex);
 			}
-			
+
 		}
 
 		@Override
@@ -787,9 +783,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			} else {
 				intent.setClass(getApplicationContext(), MainActivity.class);
 				notificationHelper.showMucError(room.getRoomJid().toString(), intent);
-			}			
+			}
 		}
-		
+
 		@Override
 		public void onYouJoined(SessionObject sessionObject, Room room,
 				String asNickname) {
@@ -812,19 +808,19 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			}
 			chatProvider.updateRoomState(sessionObject, room.getRoomJid(), state);
 		}
-		
+
 	}
-	
-	private class PresenceHandler implements PresenceModule.ContactAvailableHandler, 
+
+	private class PresenceHandler implements PresenceModule.ContactAvailableHandler,
 		PresenceModule.ContactUnavailableHandler, PresenceModule.ContactChangedPresenceHandler,
 		PresenceModule.BeforePresenceSendHandler {
 
 		private final JaxmppService jaxmppService;
-		
+
 		public PresenceHandler(JaxmppService jaxmppService) {
 			this.jaxmppService = jaxmppService;
 		}
-		
+
 		@Override
 		public void onContactChangedPresence(SessionObject sessionObject,
 				Presence stanza, JID jid, Show show, String status,
@@ -842,7 +838,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			catch (JaxmppException ex) {
 				Log.v(TAG, "Exception updating roster item presence", ex);
 			}
-			rosterProvider.updateStatus(sessionObject, jid);		
+			rosterProvider.updateStatus(sessionObject, jid);
 		}
 
 		@Override
@@ -866,9 +862,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			}
 			activityFeature.beforePresenceSend(prefs, presence);
 		}
-		
+
 	}
-	
+
 	private class StreamHandler implements DiscoveryModule.ServerFeaturesReceivedHandler {
 
 		@Override
@@ -877,7 +873,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			Set<String> features = new HashSet<String>(Arrays.asList(featuresArr));
 			if (features.contains(MessageCarbonsModule.XMLNS_MC)) {
 				MessageCarbonsModule mc = multiJaxmpp.get(sessionObject).getModule(MessageCarbonsModule.class);
-				// if we decide to disable MessageCarbons for some account we may not create module 
+				// if we decide to disable MessageCarbons for some account we may not create module
 				// instance at all, so better be prepared for null here
 				if (mc != null) {
 					try {
@@ -920,9 +916,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				}
 			}
 		}
-		
+
 	}
-	
+
 	public static final int SEND_MESSAGE = 1;
 	public static final String CLIENT_FOCUS = "org.tigase.messenger.phone.pro.CLIENT_FOCUS";
 	public static final String ERROR_MESSAGE = "org.tigase.messenger.phone.pro.ERROR_MESSAGE";
@@ -931,21 +927,21 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private static final String ACTION_KEEPALIVE = "org.tigase.messenger.phone.pro.service.JaxmppService.KEEP_ALIVE";
 	private static final String TAG = "JaxmppService";
 	private static final StanzaExecutor executor = new StanzaExecutor();
-	
+
 	protected static Show userStatusShow = Show.online;
 	protected static String userStatusMessage = null;
 	public static Context context = null;
-	
+
 	protected final Timer timer = new Timer();
-	
+
 	// do we need this any more?
 	private Map<BareJID,Chat> chats = new HashMap<BareJID,Chat>();
 	private MultiJaxmpp multiJaxmpp = new MultiJaxmpp();
 	private ConnectivityManager connManager;
-	
+
 	private HashSet<SessionObject> locked = new HashSet<SessionObject>();
-	private int usedNetworkType = -1;	
-	
+	private int usedNetworkType = -1;
+
 	private AccountModifyReceiver accountModifyReceiver = new AccountModifyReceiver();
 	private ClientFocusReceiver clientFocusReceiver = new ClientFocusReceiver();
 	private CapabilitiesDBCache capsCache = null;
@@ -958,10 +954,10 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	private PresenceHandler presenceHandler = null;
 	private RosterProviderExt rosterProvider = null;
 	private ChatProvider chatProvider = null;
-	
+
 	private boolean reconnect = true;
 	private JID activeChatJid = null;
-	
+
 	private class AccountModifyReceiver extends BroadcastReceiver {
 
 		@Override
@@ -972,11 +968,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
                 if (st == State.disconnected || st == null) {
                     connectJaxmpp((Jaxmpp) j, (Long) null);
                 }
-            }			
+            }
 		}
-		
+
 	}
-	
+
 	private class ClientFocusReceiver extends BroadcastReceiver {
 
 		@Override
@@ -996,9 +992,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				}
 			}
 		}
-		
+
 	}
-	
+
 	private class ConnReceiver extends BroadcastReceiver {
 
 		@Override
@@ -1006,14 +1002,14 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			NetworkInfo netInfo = ((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
 			onNetworkChange(netInfo);
 		}
-		
+
 	}
-	
+
 //	private class IncomingHandler extends Handler {
-//		
+//
 //		public void handleMessage(Message msg) {
 //			switch (msg.what) {
-//				case SEND_MESSAGE:					
+//				case SEND_MESSAGE:
 //					Bundle data = msg.getData();
 //					BareJID account = BareJID.bareJIDInstance(data.getString("account"));
 //					JID to = JID.jidInstance(data.getString("to"));
@@ -1030,7 +1026,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 //							// TODO Auto-generated catch block
 //							e.printStackTrace();
 //						}
-//						
+//
 //					}
 //					final Chat ch = chat;
 //					new Thread() {
@@ -1040,7 +1036,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 //								messageModule.sendMessage(ch, body);
 //							} catch (JaxmppException e) {
 //								e.printStackTrace();
-//							}							
+//							}
 //						}
 //					}.start();
 //
@@ -1049,9 +1045,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 //					super.handleMessage(msg);
 //			}
 //		}
-//		
+//
 //	}
-	
+
 	private class ScreenStateReceiver extends BroadcastReceiver {
 		@Override
 		public void onReceive(Context context, Intent intent) {
@@ -1066,7 +1062,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			}
 		}
 	}
-	
+
 //	final Messenger messenger = new Messenger(new IncomingHandler());
 
 	private ActivityFeature activityFeature;
@@ -1085,31 +1081,31 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	public MultiJaxmpp getMulti() {
 		return multiJaxmpp;
 	}
-	
+
 	@Override
 	public void onCreate() {
 		context = this;
-		
+
         // workaround for https://code.google.com/p/android/issues/detail?id=20915
         try {
             Class.forName("android.os.AsyncTask");
         } catch (ClassNotFoundException e) {
         }
-		
+
         AvatarHelper.initilize(context);
 
     	if (geolocationFeature == null) {
     		geolocationFeature = new GeolocationFeature(this);
     		geolocationFeature.onStart();
     	}
-    	
+
 		// Android from API v8 contains optimized SSLSocketFactory
 		// which reduces network usage for handshake
 		SSLSessionCache sslSessionCache = new SSLSessionCache(this);
 		sslSocketFactory = SSLCertificateSocketFactory.getDefault(0, sslSessionCache);
-        
+
         mobileModeFeature = new MobileModeFeature(this);
-        
+
 		setUsedNetworkType(-1);
 		this.prefChangeListener = new OnSharedPreferenceChangeListener() {
 
@@ -1135,21 +1131,21 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 					activityFeature.onSharedPreferenceChanged(sharedPreferences, key);
 				}
 			}
-		};		
+		};
 		//this.prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		this.prefs = Preferences.getDefaultSharedPreferences(this);
-		this.prefs.registerOnSharedPreferenceChangeListener(prefChangeListener);		
+		this.prefs.registerOnSharedPreferenceChangeListener(prefChangeListener);
 
         if (activityFeature == null) {
-        	activityFeature = new ActivityFeature(this);
+        	activityFeature = new ActivityFeature(getApplicationContext(), this);
         	activityFeature.onStart();
-        }		
+        }
         if (fileTransferFeature == null) {
         	fileTransferFeature = new FileTransferFeature(this);
         }
-		
+
 		keepaliveInterval = 1000 * 60 * this.prefs.getInt(Preferences.KEEPALIVE_TIME_KEY, 3);
-		
+
 		this.connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 		this.connReceiver = new ConnReceiver();
 		IntentFilter filter = new IntentFilter("android.net.conn.CONNECTIVITY_CHANGE");
@@ -1164,10 +1160,10 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		registerReceiver(screenStateReceiver, filter);
 
 		this.dbHelper = new DatabaseHelper(this);
-		this.rosterProvider = new RosterProviderExt(this, dbHelper, new RosterProvider.Listener() {		
+		this.rosterProvider = new RosterProviderExt(this, dbHelper, new RosterProvider.Listener() {
 			@Override
 			public void onChange(Long rosterItemId) {
-				Uri uri = rosterItemId != null 
+				Uri uri = rosterItemId != null
 						? Uri.parse(org.tigase.messenger.phone.pro.db.providers.RosterProvider.CONTENT_URI + "/" + rosterItemId)
 						: Uri.parse(org.tigase.messenger.phone.pro.db.providers.RosterProvider.CONTENT_URI);
 				//Log.v(TAG, "Notifing about changed roster item with id = " + rosterItemId + " - " + uri.toString());
@@ -1185,17 +1181,17 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 						? Uri.parse(org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider.OPEN_CHATS_URI + "/" + chatId)
 						: Uri.parse(org.tigase.messenger.phone.pro.db.providers.OpenChatsProvider.OPEN_CHATS_URI);
 				context.getContentResolver().notifyChange(uri, null);
-			}			
+			}
 		});
 		chatProvider.resetRoomState(CPresence.OFFLINE);
 		this.mucHandler = new MucHandler();
 		this.streamHandler = new StreamHandler();
 		this.capsCache = new CapabilitiesDBCache(dbHelper);
-		
+
 		notificationHelper = NotificationHelper.createInstance(context);
-		
-		multiJaxmpp.addHandler(JaxmppCore.ConnectedHandler.ConnectedEvent.class, this);
-		multiJaxmpp.addHandler(JaxmppCore.DisconnectedHandler.DisconnectedEvent.class, this);
+
+		multiJaxmpp.addHandler(JaxmppCore.LoggedInHandler.LoggedInEvent.class, this);
+		multiJaxmpp.addHandler(JaxmppCore.LoggedOutHandler.LoggedOutEvent.class, this);
 		multiJaxmpp.addHandler(DiscoveryModule.ServerFeaturesReceivedHandler.ServerFeaturesReceivedEvent.class, streamHandler);
 		multiJaxmpp.addHandler(PresenceModule.ContactAvailableHandler.ContactAvailableEvent.class, presenceHandler);
 		multiJaxmpp.addHandler(PresenceModule.ContactUnavailableHandler.ContactUnavailableEvent.class, presenceHandler);
@@ -1209,32 +1205,34 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		multiJaxmpp.addHandler(MucModule.YouJoinedHandler.YouJoinedEvent.class, mucHandler);
 		multiJaxmpp.addHandler(MucModule.StateChangeHandler.StateChangeEvent.class, mucHandler);
 		multiJaxmpp.addHandler(MucModule.PresenceErrorHandler.PresenceErrorEvent.class, mucHandler);
-		
+
 		multiJaxmpp.addHandler(Connector.StanzaSendingHandler.StanzaSendingEvent.class, new Connector.StanzaSendingHandler() {
 			@Override
 			public void onStanzaSending(SessionObject sessionObject,
 					Element stanza) throws JaxmppException {
 				Log.v("STREAM", "sending stanza = " + stanza.getAsString());
-			}			
+			}
 		});
 		multiJaxmpp.addHandler(StanzaReceivedHandler.StanzaReceivedEvent.class, new Connector.StanzaReceivedHandler() {
+
+
 			@Override
 			public void onStanzaReceived(SessionObject sessionObject,
-					Element stanza) {
+					StreamPacket stanza) {
 				try {
 					Log.v("STREAM", "received stanza = " + stanza.getAsString());
 				} catch (XMLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			}			
+			}
 		});
-		
+
 		updateJaxmppInstances();
-		startKeepAlive();	
+		startKeepAlive();
 		updateServiceNotification();
 	}
-	
+
 	@Override
 	public IBinder onBind(Intent intent) {
 		// TODO Auto-generated method stub
@@ -1248,28 +1246,28 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	public void onDestroy() {
 		stopForeground(true);
 		timer.cancel();
-		
+
 		if (connReceiver != null)
 			unregisterReceiver(connReceiver);
 		if (accountModifyReceiver != null)
 			unregisterReceiver(accountModifyReceiver);
 		if (clientFocusReceiver != null)
 			unregisterReceiver(clientFocusReceiver);
-		
+
 		disconnectAllJaxmpp(true);
 		stopKeepAlive();
 		setUsedNetworkType(-1);
-		
+
 		if (geolocationFeature != null) {
         	geolocationFeature.onStop();
-        	geolocationFeature = null;			
+        	geolocationFeature = null;
 		}
-		
+
 		if (activityFeature != null) {
 			activityFeature.onStop();
 			activityFeature = null;
 		}
-		
+
 		super.onDestroy();
 		mobileModeFeature = null;
 		context = null;
@@ -1278,7 +1276,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 //		if (intent != null && intent.getAction() != null) {
-//			
+//
 //		}
 //		else {
 		if (intent != null && "connect-all".equals(intent.getAction())) {
@@ -1300,9 +1298,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 
 		return Service.START_STICKY;
 	}
-	
+
 	@Override
-	public void onConnected(SessionObject sessionObject) {
+	public void onLoggedIn(SessionObject sessionObject) {
 		try {
 			Log.v(TAG, "account " + sessionObject.getUserBareJid() + " connected");
 			Jaxmpp jaxmpp = multiJaxmpp.get(sessionObject);
@@ -1311,7 +1309,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		} catch (JaxmppException e) {
 			Log.e(TAG, "Exception processing MobileModeFeature on connect for account " + sessionObject.getUserBareJid().toString());
 		}
-		
+
 		try {
 			Jaxmpp jaxmpp = multiJaxmpp.get(sessionObject);
 			MucModule mucModule = jaxmpp.getModule(MucModule.class);
@@ -1323,12 +1321,12 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		} catch (JaxmppException e) {
 			Log.e(TAG, "Exception while rejoining to rooms on connect for account " + sessionObject.getUserBareJid().toString());
 		}
-		
+
 		updateServiceNotification();
 	}
-	
+
 	@Override
-	public void onDisconnected(SessionObject sessionObject) {
+	public void onLoggedOut(SessionObject sessionObject) {
 		Jaxmpp jaxmpp = multiJaxmpp.get(sessionObject);
 		if (reconnect && getUsedNetworkType() != -1) {
 			if (jaxmpp != null) {
@@ -1336,7 +1334,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			}
 		}
 		geolocationFeature.accountDisconnected(jaxmpp);
-		
+
 		updateServiceNotification();
 	}
 
@@ -1350,28 +1348,28 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			disconnectAllJaxmpp(false);
 		}
 	}
-	
+
 	@Override
 	public void onTrimMemory(int level) {
 		ImageHelper.onTrimMemory(level);
 	}
-	
+
     protected final State getState(SessionObject object) {
         State state = multiJaxmpp.get(object).getSessionObject().getProperty(Connector.CONNECTOR_STAGE_KEY);
         return state == null ? State.disconnected : state;
-    }	
-    
+    }
+
     private void setReconnect(boolean val) {
     	this.reconnect = val;
     }
-    
+
 	private void updateJaxmppInstances() {
     	Resources resources = this.getResources();
     	final HashSet<BareJID> accountsJids = new HashSet<BareJID>();
     	for (JaxmppCore jaxmpp : multiJaxmpp.get()) {
     		accountsJids.add(jaxmpp.getSessionObject().getUserBareJid());
     	}
-    	
+
     	AccountManager am = AccountManager.get(this);
     	for (Account account : am.getAccountsByType(AccountAuthenticator.ACCOUNT_TYPE)) {
     		BareJID accountJid = BareJID.bareJIDInstance(account.name);
@@ -1380,11 +1378,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     		String hostname = am.getUserData(account, AccountsConstants.FIELD_HOSTNAME);
     		String resource = am.getUserData(account, AccountsConstants.FIELD_RESOURCE);
     		hostname = hostname == null ? null : hostname.trim();
-    		
+
     		Jaxmpp jaxmpp = multiJaxmpp.get(accountJid);
     		if (jaxmpp == null) {
     			SessionObject sessionObject = new J2SESessionObject();
-    			
+
     			sessionObject.setUserProperty(Connector.TRUST_MANAGERS_KEY, SecureTrustManagerFactory.getTrustManagers(context));
     			sessionObject.setUserProperty(SoftwareVersionModule.VERSION_KEY, resources.getString(R.string.app_version));
     			sessionObject.setUserProperty(SoftwareVersionModule.NAME_KEY, resources.getString(R.string.app_name));
@@ -1393,19 +1391,19 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			sessionObject.setUserProperty(DiscoveryModule.IDENTITY_CATEGORY_KEY, "client");
     			sessionObject.setUserProperty(DiscoveryModule.IDENTITY_TYPE_KEY, "phone");
     			sessionObject.setUserProperty(CapabilitiesModule.NODE_NAME_KEY, "http://tigase.org/messenger");
-    			
+
     			sessionObject.setUserProperty("ID", (long) account.hashCode());
     			sessionObject.setUserProperty(SocketConnector.SERVER_PORT, 5222);
     			sessionObject.setUserProperty(tigase.jaxmpp.j2se.Jaxmpp.CONNECTOR_TYPE, "socket");
-    			sessionObject.setUserProperty(Connector.EXTERNAL_KEEPALIVE_KEY, true);    		
-    			
+    			sessionObject.setUserProperty(Connector.EXTERNAL_KEEPALIVE_KEY, true);
+
     			sessionObject.setUserProperty(SessionObject.USER_BARE_JID, accountJid);
-    			
-    			sessionObject.setUserProperty(SocketConnector.SSL_SOCKET_FACTORY_KEY, sslSocketFactory);    			
-    			
+
+    			sessionObject.setUserProperty(SocketConnector.SSL_SOCKET_FACTORY_KEY, sslSocketFactory);
+
     			jaxmpp = new Jaxmpp(sessionObject);
     			jaxmpp.setExecutor(executor);
-    			
+
     			RosterModule.setRosterStore(sessionObject, new AndroidRosterStore(this.rosterProvider));
     			jaxmpp.getModulesManager().register(new RosterModule(this.rosterProvider));
     			PresenceModule.setPresenceStore(sessionObject, new J2SEPresenceStore());
@@ -1419,18 +1417,18 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			} catch (JaxmppException ex) {
     				Log.v(TAG, "Exception creating instance of MessageCarbonsModule", ex);
     			}
-    			
+
     			jaxmpp.getModulesManager().register(new MucModule(new AndroidRoomsManager(this.chatProvider)));
     			jaxmpp.getModulesManager().register(new VCardModule());
     			jaxmpp.getModulesManager().register(new BookmarksModule());
     			CapabilitiesModule capsModule = new CapabilitiesModule();
     			capsModule.setCache(capsCache);
     			jaxmpp.getModulesManager().register(capsModule);
-    			
+
     			Log.v(TAG, "registering account " + accountJid.toString());
     			multiJaxmpp.add(jaxmpp);
-    		}	
-    		
+    		}
+
     		SessionObject sessionObject = jaxmpp.getSessionObject();
     		sessionObject.setUserProperty(SessionObject.PASSWORD, password);
     		sessionObject.setUserProperty(SessionObject.NICKNAME, nickname);
@@ -1442,18 +1440,18 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     		MobileModeFeature.updateSettings(account, jaxmpp, context);
     		Boolean disabled = Boolean.valueOf(am.getUserData(account, "DISABLED"));
     		sessionObject.setUserProperty("CC:DISABLED", disabled);
-    		
+
     		fileTransferFeature.updateSettings(jaxmpp, this);
-    		
+
     		boolean needToSendPresence = false;
-    		
+
     		// updating settings for Chat State Notification
     		final boolean value = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(Preferences.ENABLE_CHAT_STATE_SUPPORT_KEY, true);
     		Log.v(TAG, "updating chat state support to =  " + value);
     		needToSendPresence |= (ChatStateExtension.isDisabled(sessionObject) != (value));
     		jaxmpp.getModule(MessageModule.class).getExtensionChain().getExtension(ChatStateExtension.class).setDisabled(!value);
     		needToSendPresence |= geolocationFeature.updateGeolocationSettings(account, jaxmpp, context, this.dbHelper);
-   
+
     		// if we need to send presence (features changed), then go for it
     		// maybe we should clear CAPS module, or reset it?
     		if (needToSendPresence && jaxmpp.isConnected()) {
@@ -1469,7 +1467,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     				}
     			}.start();
     		}
-    		
+
     		if (disabled != null && disabled) {
     			if (jaxmpp.isConnected()) {
     				this.disconnectJaxmpp(jaxmpp, true);
@@ -1480,10 +1478,10 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     				this.connectJaxmpp(jaxmpp, 1L);
     			}
     		}
-    		
+
     		accountsJids.remove(accountJid);
     	}
-    	
+
     	for (BareJID accountJid : accountsJids) {
     		final Jaxmpp jaxmpp = multiJaxmpp.get(accountJid);
     		if (jaxmpp != null) {
@@ -1506,23 +1504,23 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     		}
     	}
     }
-    
+
     private void connectAllJaxmpp(Long delay) {
     	setUsedNetworkType(getActiveNetworkType());
     	//geolocationFeature.registerLocationListener();
-    	
+
     	for (final JaxmppCore jaxmpp : multiJaxmpp.get()) {
     		Log.v(TAG, "connecting account " + jaxmpp.getSessionObject().getUserBareJid());
     		connectJaxmpp((Jaxmpp) jaxmpp, delay);
     	}
     }
-    
+
     private void connectJaxmpp(final Jaxmpp jaxmpp, final Date date) {
     	if (isLocked(jaxmpp.getSessionObject())) {
     		Log.v(TAG, "cancelling connect for " + jaxmpp.getSessionObject().getUserBareJid() + " because it is locked");
     		return;
     	}
-    	
+
     	final Runnable r = new Runnable() {
     		@Override
     		public void run() {
@@ -1555,8 +1553,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     			}
     		}
     	};
-    	lock(jaxmpp.getSessionObject(), true);	
-    	
+    	lock(jaxmpp.getSessionObject(), true);
+
     	if (date == null) {
     		r.run();
     	}
@@ -1569,11 +1567,11 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     		}, date);
     	}
     }
-    
+
     private void connectJaxmpp(final Jaxmpp jaxmpp, final Long delay) {
     	connectJaxmpp(jaxmpp, delay == null ? null : new Date(delay + System.currentTimeMillis()));
     }
-    
+
     private void disconnectJaxmpp(final Jaxmpp jaxmpp, final boolean cleaning) {
         (new Thread() {
             @Override
@@ -1588,9 +1586,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
                             Log.e(TAG, "cant; disconnect account " + jaxmpp.getSessionObject().getUserBareJid(), e);
                     }
             }
-        }).start();    	
+        }).start();
     }
-    
+
     private void disconnectAllJaxmpp(final boolean cleaning) {
         setUsedNetworkType(-1);
 //        if (geolocationFeature != null) {
@@ -1600,12 +1598,12 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
         for (final JaxmppCore j : multiJaxmpp.get()) {
         	disconnectJaxmpp((Jaxmpp) j, cleaning);
         }
-        
+
 //        synchronized (connectionErrorsCounter) {
 //                connectionErrorsCounter.clear();
 //        }
     }
-    
+
     private int getActiveNetworkType() {
     	NetworkInfo info = connManager.getActiveNetworkInfo();
     	if (info == null)
@@ -1614,18 +1612,18 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     		return -1;
     	return info.getType();
     }
-    
+
     public boolean isDisabled(SessionObject sessionObject) {
     	Boolean x = sessionObject.getProperty("CC:DISABLED");
     	return x == null ? false : x;
     }
-    
+
     private boolean isLocked(SessionObject sessionObject) {
     	synchronized (locked) {
     		return locked.contains(sessionObject);
     	}
     }
-    
+
     private void lock(SessionObject sessionObject, boolean value) {
     	synchronized (locked) {
     		if (value) {
@@ -1636,15 +1634,15 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
     		}
     	}
     }
-    
+
     private void setUsedNetworkType(int type) {
     	this.usedNetworkType = type;
     }
-    
+
     private int getUsedNetworkType() {
     	return this.usedNetworkType;
     }
-    
+
 	protected synchronized void updateRosterItem(final SessionObject sessionObject, final Presence p)
 			throws XMLException {
 		if (p != null) {
@@ -1691,7 +1689,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			}
 		}.start();
 	}
-	
+
 	private void retrieveVCard(final SessionObject sessionObject,
 			final BareJID jid) {
 		try {
@@ -1735,7 +1733,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			Log.e("tigase", "WTF?", e);
 		}
 	}
-	
+
 	protected void sendAutoPresence(final boolean delayed) {
 		if (autoPresenceTask != null) {
 			autoPresenceTask.cancel();
@@ -1780,8 +1778,8 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				}
 			}).start();
 		}
-	}	
-	
+	}
+
 	private void startKeepAlive() {
 		Intent i = new Intent();
 		i.setClass(this, JaxmppService.class);
@@ -1790,7 +1788,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		AlarmManager alarmMgr = (AlarmManager) getSystemService(ALARM_SERVICE);
 		alarmMgr.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + keepaliveInterval, keepaliveInterval, pi);
 	}
-	
+
 	private void stopKeepAlive() {
 		Intent i = new Intent();
 		i.setClass(this, JaxmppService.class);
@@ -1799,7 +1797,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		AlarmManager alarmMgr = (AlarmManager) getSystemService(ALARM_SERVICE);
 		alarmMgr.cancel(pi);
 	}
-	
+
 	private void storeMessage(SessionObject sessionObject, Chat chat, tigase.jaxmpp.core.client.xmpp.stanzas.Message msg, boolean showNotification) throws XMLException {
 		// for now let's ignore messages without body element
 		if (msg.getBody() == null && msg.getType() != StanzaType.error)
@@ -1813,7 +1811,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 		else {
 			jid = (sessionObject.getUserBareJid().equals(authorJid) ? msg.getTo().getBareJid() : authorJid).toString();
 		}
-		
+
 		Uri uri = Uri.parse(ChatHistoryProvider.CHAT_URI + "/" + Uri.encode(jid));
 
 		ContentValues values = new ContentValues();
@@ -1848,7 +1846,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			values.put(ChatTableMetaData.FIELD_THREAD_ID, chat.getThreadId());
 		}
 		values.put(ChatTableMetaData.FIELD_ACCOUNT, sessionObject.getUserBareJid().toString());
-		
+
 		int type = ChatTableMetaData.ITEM_TYPE_MESSAGE;
 		Element geoloc = msg.getChildrenNS("geoloc", "http://jabber.org/protocol/geoloc");
 		if (geoloc != null) {
@@ -1856,21 +1854,21 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 			type = ChatTableMetaData.ITEM_TYPE_LOCALITY;
 		}
 		values.put(ChatTableMetaData.FIELD_ITEM_TYPE, type);
-		values.put(ChatTableMetaData.FIELD_STATE, sessionObject.getUserBareJid().equals(authorJid) 
-				? ChatTableMetaData.STATE_OUT_SENT : ChatTableMetaData.STATE_INCOMING_UNREAD);	
-		
+		values.put(ChatTableMetaData.FIELD_STATE, sessionObject.getUserBareJid().equals(authorJid)
+				? ChatTableMetaData.STATE_OUT_SENT : ChatTableMetaData.STATE_INCOMING_UNREAD);
+
 		SQLiteDatabase db = dbHelper.getWritableDatabase();
 		long id = db.insert(ChatTableMetaData.TABLE_NAME, null, values);
 		Log.v(TAG, "inserted message - id = " + id);
 		context.getContentResolver().notifyChange(uri, null);
-		//context.getContentResolver().insert(uri, values);		
-		
-		if (!sessionObject.getUserBareJid().equals(authorJid) && showNotification 
+		//context.getContentResolver().insert(uri, values);
+
+		if (!sessionObject.getUserBareJid().equals(authorJid) && showNotification
 				&& (this.activeChatJid == null || !this.activeChatJid.getBareJid().equals(authorJid))) {
 			notificationHelper.notifyNewChatMessage(sessionObject, msg);
 		}
 	}
-	
+
 	private void updateServiceNotification() {
 		int ico = R.drawable.ic_stat_disconnected;
 		String notificationTitle = null;
@@ -1893,7 +1891,7 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 						++offlineCount;
 					} else {
 						++connectingCount;
-					}	
+					}
 				}
 			}
 			if (connectingCount > 0) {
@@ -1909,9 +1907,9 @@ public class JaxmppService extends Service implements ConnectedHandler, Disconne
 				expandedNotificationTitle = getResources().getString(R.string.service_online_notification_text);
 			}
 		}
-		
+
 		Notification notification = notificationHelper.getForegroundNotification(ico, notificationTitle, expandedNotificationTitle);
 		startForeground(NotificationHelper.NOTIFICATION_ID, notification);
 	}
-	
+
 }
