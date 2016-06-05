@@ -99,11 +99,14 @@ public class ConnectionChecker {
 
 	public boolean check(Context context) {
 		Log.i(TAG, "Checking connection " + jid + "...");
-
+		//yaogang.hao 2016-06-05
+		//contact.getConnectionConfiguration().setDisableTLS(true);
+		//contact.getConnectionConfiguration().setUseSASL(false);
 		contact.getProperties().setUserProperty(SessionObject.USER_BARE_JID, jid);
 		contact.getProperties().setUserProperty(SessionObject.PASSWORD, password);
 		contact.getProperties().setUserProperty(Connector.TRUST_MANAGERS_KEY,
 				SecureTrustManagerFactory.getTrustManagers(context));
+
 		if (hostname != null && !hostname.trim().isEmpty())
 			contact.getProperties().setUserProperty(SocketConnector.SERVER_HOST, hostname);
 

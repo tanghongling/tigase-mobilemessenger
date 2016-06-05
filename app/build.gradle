@@ -36,10 +36,10 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file('/home/haoyaogang/tigase-mobilemessenger/keystore.jks')
+            storeFile file('../keystore.jks')
             storePassword 'mylove'
             keyAlias 'mylove'
-            keyPassword 'myloved'
+            keyPassword 'mylove'
         }
     }
 
