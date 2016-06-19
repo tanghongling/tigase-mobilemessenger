@@ -31,8 +31,20 @@ import org.tigase.messenger.jaxmpp.android.roster.RosterDbHelper;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 
-	public DatabaseHelper(Context context) {
+	private static DatabaseHelper sInstance;
+
+	private DatabaseHelper(Context context) {
 		super(context, DatabaseContract.DATABASE_NAME, null, DatabaseContract.DATABASE_VERSION);
+	}
+
+	public static synchronized DatabaseHelper getInstance(Context context) {
+		// Use the application context, which will ensure that you
+		// don't accidentally leak an Activity's context.
+		// See this article for more information: http://bit.ly/6LRzfx
+		if (sInstance == null) {
+			sInstance = new DatabaseHelper(context.getApplicationContext());
+		}
+		return sInstance;
 	}
 
 	@Override
@@ -47,7 +59,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 				+ DatabaseContract.RosterItemsCache.FIELD_STATUS + " INTEGER DEFAULT 0;");
 
 		db.execSQL(DatabaseContract.ChatHistory.CREATE_TABLE);
-		db.execSQL(DatabaseContract.ChatHistory.CREATE_INDEX);
+		db.execSQL(DatabaseContract.ChatHistory.CREATE_INDEX_JID);
+		db.execSQL(DatabaseContract.ChatHistory.CREATE_INDEX_STATE);
 
 		db.execSQL(DatabaseContract.VCardsCache.CREATE_TABLE);
 		db.execSQL(DatabaseContract.VCardsCache.CREATE_INDEX);
@@ -59,5 +72,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 		Log.i("DatabaseHelper", "Update database from " + oldVersion + " to " + newVersion);
+		if (oldVersion == 6 && newVersion == 7) {
+			db.execSQL("DROP INDEX " + DatabaseContract.ChatHistory.INDEX_JID);
+
+			db.execSQL(DatabaseContract.ChatHistory.CREATE_INDEX_JID);
+			db.execSQL(DatabaseContract.ChatHistory.CREATE_INDEX_STATE);
+
+		}
 	}
 }

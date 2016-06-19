@@ -14,6 +14,7 @@ import org.tigase.messenger.phone.pro.R;
 public class NewAccountActivity extends AppCompatActivity {
 
 	public static final int LOGIN_REQUEST = 1;
+	public static final int CREATE_REQUEST = 2;
 
 	@Bind(R.id.textView3)
 	TextView tv;
@@ -42,7 +43,8 @@ public class NewAccountActivity extends AppCompatActivity {
 
 	@OnClick(value = R.id.createNewAccountButton)
 	void onCreateNewAccountButtonClick() {
-
+		Intent intent = new Intent(this, CreateAccountActivity.class);
+		startActivityForResult(intent, CREATE_REQUEST);
 	}
 
 	@OnClick(value = R.id.useExistingAccountButton)

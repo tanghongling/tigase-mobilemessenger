@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ AndroidManifest.xml
   ~
   ~ Tigase Android Messenger
@@ -20,139 +19,137 @@
   ~ If not, see http://www.gnu.org/licenses/.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="org.tigase.messenger.phone.pro">
+    package="org.tigase.messenger.phone.pro">
 
     <!-- To auto-complete the email text field in the login form with the user's emails -->
-    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS"/>
-    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
+    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <!-- <uses-permission android:name="android.permission.READ_PROFILE"/> -->
     <!-- <uses-permission android:name="android.permission.READ_CONTACTS"/> -->
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-            android:name=".MessengerApplication"
-            android:allowBackup="true"
-            android:icon="@mipmap/ic_launcher"
-            android:label="@string/app_name"
-            android:supportsRtl="true"
-            android:theme="@style/AppTheme">
+        android:name=".MessengerApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
         <activity
-                android:name=".MainActivity"
-                android:configChanges="orientation|keyboardHidden|screenSize"
-                android:label="@string/app_name"
-                android:theme="@style/AppTheme.NoActionBar">
+            android:name=".MainActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
+                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
-                android:name=".settings.SettingsActivity"
-                android:label="@string/title_activity_settings"
-                android:parentActivityName=".MainActivity">
+            android:name=".settings.SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName=".MainActivity">
             <meta-data
-                    android:name="android.support.PARENT_ACTIVITY"
-                    android:value="org.tigase.messenger.phone.pro.MainActivity"/>
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="org.tigase.messenger.phone.pro.MainActivity" />
         </activity>
         <activity
-                android:name=".account.LoginActivity"
-                android:label="@string/title_activity_login">
+            android:name=".account.LoginActivity"
+            android:label="@string/title_activity_login">
             <intent-filter>
-                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
         <service
-                android:name=".account.AuthenticatorService"
-                android:exported="false">
+            android:name=".account.AuthenticatorService"
+            android:exported="false">
             <intent-filter>
-                <action android:name="android.accounts.AccountAuthenticator"/>
+                <action android:name="android.accounts.AccountAuthenticator" />
             </intent-filter>
 
             <meta-data
-                    android:name="android.accounts.AccountAuthenticator"
-                    android:resource="@xml/authenticator"/>
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
         </service>
 
         <activity
-                android:name=".AboutActivity"
-                android:configChanges="orientation|keyboardHidden|screenSize"
-                android:label="@string/about_activity_title"
-                android:parentActivityName=".MainActivity"
-                android:theme="@style/FullscreenTheme">
+            android:name=".AboutActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:label="@string/about_activity_title"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/FullscreenTheme">
             <meta-data
-                    android:name="android.support.PARENT_ACTIVITY"
-                    android:value="org.tigase.messenger.phone.pro.MainActivity"/>
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="org.tigase.messenger.phone.pro.MainActivity" />
         </activity>
 
         <service
-                android:name=".service.XMPPService"
-                android:enabled="true"
-                android:exported="false"/>
+            android:name=".service.XMPPService"
+            android:enabled="true"
+            android:exported="false" />
 
         <receiver
-                android:name=".service.ServiceRestarter"
-                android:exported="false">
+            android:name=".service.ServiceRestarter"
+            android:exported="false">
             <intent-filter>
-                <action android:name="org.tigase.messenger.phone.pro.XMPP_SERVICE_DESTROYED">
-                </action>
+                <action android:name="org.tigase.messenger.phone.pro.XMPP_SERVICE_DESTROYED"></action>
             </intent-filter>
         </receiver>
 
         <provider
-                android:name=".providers.RosterProvider"
-                android:authorities="org.tigase.messenger.phone.pro.Roster"
-                android:enabled="true"
-                android:exported="false"/>
+            android:name=".providers.RosterProvider"
+            android:authorities="org.tigase.messenger.phone.pro.Roster"
+            android:enabled="true"
+            android:exported="false" />
 
         <activity android:name=".roster.contact.EditContactActivity">
             <meta-data
-                    android:name="android.support.PARENT_ACTIVITY"
-                    android:value="org.tigase.messenger.phone.pro.MainActivity"/>
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="org.tigase.messenger.phone.pro.MainActivity" />
         </activity>
 
         <provider
-                android:name=".providers.ChatProvider"
-                android:authorities="org.tigase.messenger.phone.pro.Chat"
-                android:enabled="true"
-                android:exported="false">
-        </provider>
+            android:name=".providers.ChatProvider"
+            android:authorities="org.tigase.messenger.phone.pro.Chat"
+            android:enabled="true"
+            android:exported="false"></provider>
 
         <activity
-                android:name=".conversations.chat.ChatActivity"
-                android:label="@string/title_activity_chat"
-                android:parentActivityName=".MainActivity"
-                android:theme="@style/AppTheme.NoActionBar">
+            android:name=".conversations.chat.ChatActivity"
+            android:label="@string/title_activity_chat"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppTheme.NoActionBar">
             <meta-data
-                    android:name="android.support.PARENT_ACTIVITY"
-                    android:value="org.tigase.messenger.phone.pro.MainActivity"/>
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="org.tigase.messenger.phone.pro.MainActivity" />
         </activity>
-        <activity android:name=".roster.request.SubscriptionRequestActivity">
+        <activity android:name=".roster.request.SubscriptionRequestActivity"></activity>
+        <activity
+            android:name=".conversations.muc.MucActivity"
+            android:label="@string/title_activity_muc"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="org.tigase.messenger.phone.pro.MainActivity" />
         </activity>
         <activity
-                android:name=".conversations.muc.MucActivity"
-                android:label="@string/title_activity_muc"
-                android:parentActivityName=".MainActivity"
-                android:theme="@style/AppTheme.NoActionBar">
+            android:name=".conversations.muc.JoinMucActivity"
+            android:label="@string/title_activity_join_muc"
+            android:parentActivityName=".MainActivity">
             <meta-data
-                    android:name="android.support.PARENT_ACTIVITY"
-                    android:value="org.tigase.messenger.phone.pro.MainActivity"/>
-        </activity>
-        <activity
-                android:name=".conversations.muc.JoinMucActivity"
-                android:label="@string/title_activity_join_muc"
-                android:parentActivityName=".MainActivity">
-            <meta-data
-                    android:name="android.support.PARENT_ACTIVITY"
-                    android:value="org.tigase.messenger.phone.pro.MainActivity"/>
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="org.tigase.messenger.phone.pro.MainActivity" />
         </activity>
         <activity android:name=".account.NewAccountActivity">
             <meta-data
-                    android:name="android.support.PARENT_ACTIVITY"
-                    android:value="org.tigase.messenger.phone.pro.MainActivity"/>
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="org.tigase.messenger.phone.pro.MainActivity" />
         </activity>
+        <activity android:name=".account.CreateAccountActivity"></activity>
     </application>
 
 </manifest>
