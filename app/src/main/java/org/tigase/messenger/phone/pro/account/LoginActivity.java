@@ -146,11 +146,13 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 			mXMPPIDView.setError(getString(R.string.error_field_required));
 			focusView = mXMPPIDView;
 			cancel = true;
-		} else if (!isEmailValid(xmppID)) {
-			mXMPPIDView.setError(getString(R.string.error_invalid_email));
-			focusView = mXMPPIDView;
-			cancel = true;
 		}
+//		else if (!isEmailValid(xmppID)) {
+//			mXMPPIDView.setError(getString(R.string.error_invalid_email));
+//			focusView = mXMPPIDView;
+//			cancel = true;
+//		}
+		xmppID = xmppID+"@"+Configure.DOMAIN;
 
 		if (cancel) {
 			// There was an error; don't attempt login and focus the first

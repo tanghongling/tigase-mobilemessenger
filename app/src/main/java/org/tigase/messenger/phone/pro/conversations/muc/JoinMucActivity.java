@@ -17,6 +17,7 @@ import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import org.tigase.messenger.phone.pro.R;
+import org.tigase.messenger.phone.pro.account.Configure;
 import org.tigase.messenger.phone.pro.service.XMPPService;
 import tigase.jaxmpp.android.Jaxmpp;
 import tigase.jaxmpp.core.client.BareJID;
@@ -75,7 +76,8 @@ public class JoinMucActivity extends AppCompatActivity {
 	@OnClick(R.id.contact_add_button)
 	void onClickJoin() {
 		final BareJID account = BareJID.bareJIDInstance(mAccountSelector.getSelectedItem().toString());
-		final BareJID jid = BareJID.bareJIDInstance(mRoomJid.getText().toString());
+		//yaogang.hao muc domain now only room name
+		final BareJID jid = BareJID.bareJIDInstance(mRoomJid.getText().toString()+ Configure.MUC_DOMAIN);
 		final String nickname = mNickname.getText().toString();
 
 		(new JoinToRoomTask(account, jid, nickname)).execute();

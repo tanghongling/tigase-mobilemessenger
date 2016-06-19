@@ -5,4 +5,5 @@ package org.tigase.messenger.phone.pro.account;
  */
 public class Configure {
     public static final String DOMAIN="iyidun.com";
+    public static final String MUC_DOMAIN="@muc."+DOMAIN;
 }
