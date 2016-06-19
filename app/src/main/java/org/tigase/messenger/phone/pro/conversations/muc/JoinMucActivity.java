@@ -19,6 +19,8 @@ import butterknife.OnClick;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.account.Configure;
 import org.tigase.messenger.phone.pro.service.XMPPService;
+import org.tigase.messenger.phone.pro.utils.ParseUtil;
+
 import tigase.jaxmpp.android.Jaxmpp;
 import tigase.jaxmpp.core.client.BareJID;
 import tigase.jaxmpp.core.client.JaxmppCore;
@@ -78,8 +80,13 @@ public class JoinMucActivity extends AppCompatActivity {
 		final BareJID account = BareJID.bareJIDInstance(mAccountSelector.getSelectedItem().toString());
 		//yaogang.hao muc domain now only room name
 		final BareJID jid = BareJID.bareJIDInstance(mRoomJid.getText().toString()+ Configure.MUC_DOMAIN);
-		final String nickname = mNickname.getText().toString();
-
+		 String nickname = mNickname.getText().toString();
+//yaogang.hao nickname is null assgin account for it
+		if("".equals(nickname))
+		{
+			nickname = ParseUtil.parseJID(mAccountSelector.getSelectedItem().toString())[0];
+		}
+		final String nickname2 = nickname;
 		(new JoinToRoomTask(account, jid, nickname)).execute();
 
 		(new AsyncTask<Void, Void, Void>() {
@@ -87,7 +94,7 @@ public class JoinMucActivity extends AppCompatActivity {
 			protected Void doInBackground(Void... params) {
 				final MucModule mucModule = mService.getJaxmpp(account).getModule(MucModule.class);
 				try {
-					mucModule.join(jid.getLocalpart(), jid.getDomain(), nickname);
+					mucModule.join(jid.getLocalpart(), jid.getDomain(), nickname2);
 				} catch (JaxmppException e) {
 					Log.e("JoinMuc", "Can't join to MUC", e);
 				}
