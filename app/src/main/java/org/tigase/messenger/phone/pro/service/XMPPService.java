@@ -1409,7 +1409,8 @@ public class XMPPService extends Service {
 						room.getRoomJid().toString()));
 				Uri x = getContentResolver().insert(uri, values);
 
-				if (notify && x != null) sendNotification(sessionObject, room, msg);
+				if (notify && x != null)
+					sendNotification(sessionObject, room, msg);
 
 				// if (activeChatJid == null ||
 				// !activeChatJid.getBareJid().equals(room.getRoomJid())) {

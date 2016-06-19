@@ -23,6 +23,7 @@ package org.tigase.messenger.phone.pro.conversations.chat;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.text.Spannable;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -32,6 +33,7 @@ import android.widget.PopupMenu;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.CursorRecyclerViewAdapter;
 import org.tigase.messenger.phone.pro.db.DatabaseContract;
+import org.tigase.messenger.phone.pro.emoji.EaseSmileUtils;
 import org.tigase.messenger.phone.pro.utils.AvatarHelper;
 import tigase.jaxmpp.core.client.BareJID;
 
@@ -86,9 +88,8 @@ public class MyChatItemRecyclerViewAdapter extends CursorRecyclerViewAdapter<Vie
 		final String body = cursor.getString(cursor.getColumnIndex(DatabaseContract.ChatHistory.FIELD_BODY));
 		final long timestampt = cursor.getLong(cursor.getColumnIndex(DatabaseContract.ChatHistory.FIELD_TIMESTAMP));
 		final int state = cursor.getInt(cursor.getColumnIndex(DatabaseContract.ChatHistory.FIELD_STATE));
-
-
-		holder.mContentView.setText(body);
+		Spannable spannable = EaseSmileUtils.getSmiledText(context,body);
+		holder.mContentView.setText(spannable);
 		holder.mTimestamp.setText(DateUtils.getRelativeDateTimeString(context, timestampt, DateUtils.MINUTE_IN_MILLIS,
 				DateUtils.WEEK_IN_MILLIS, 0));
 
