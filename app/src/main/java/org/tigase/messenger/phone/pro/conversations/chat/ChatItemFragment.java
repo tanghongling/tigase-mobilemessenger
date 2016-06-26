@@ -30,17 +30,25 @@ import android.os.IBinder;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.*;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import org.tigase.messenger.phone.pro.MainActivity;
 import org.tigase.messenger.phone.pro.R;
 import org.tigase.messenger.phone.pro.db.DatabaseContract;
+import org.tigase.messenger.phone.pro.emoji.Emoji;
+import org.tigase.messenger.phone.pro.emoji.EmojiUtil;
+import org.tigase.messenger.phone.pro.emoji.FaceFragment;
 import org.tigase.messenger.phone.pro.providers.ChatProvider;
 import org.tigase.messenger.phone.pro.service.XMPPService;
 import tigase.jaxmpp.android.Jaxmpp;
@@ -50,9 +58,10 @@ import tigase.jaxmpp.core.client.xmpp.modules.chat.Chat;
 import tigase.jaxmpp.core.client.xmpp.modules.chat.MessageModule;
 import tigase.jaxmpp.core.client.xmpp.stanzas.Message;
 
+import java.io.IOException;
 import java.util.Date;
 
-public class ChatItemFragment extends Fragment {
+public class ChatItemFragment extends Fragment  implements FaceFragment.OnEmojiClickListener{
 
 	@Bind(R.id.chat_list)
 	RecyclerView recyclerView;
@@ -60,7 +69,21 @@ public class ChatItemFragment extends Fragment {
 	EditText message;
 	@Bind(R.id.send_button)
 	ImageView sendButton;
+	@Bind(R.id.chat_textview)
+	TextView chat_textview;
+	@Bind(R.id.emojPanel)
+	RelativeLayout emojPanel;
+	@Bind(R.id.iv_face_normal)
+	ImageView iv_face_normal;
+	@Bind(R.id.iv_face_checked)
+	ImageView iv_face_checked;
+	@Bind(R.id.btn_more)
+	ImageView btn_more;
+	@Bind(R.id.Container)
+	FrameLayout Container;
 	private Chat chat;
+	private Context context;
+
 	private final MainActivity.XMPPServiceConnection mConnection = new MainActivity.XMPPServiceConnection() {
 		@Override
 		public void onServiceConnected(ComponentName name, IBinder service) {
@@ -139,7 +162,7 @@ public class ChatItemFragment extends Fragment {
 	@Override
 	public void onAttach(Context context) {
 		super.onAttach(context);
-
+		this.context =context;
 		this.mAccount = ((ChatActivity) context).getAccount();
 		this.mChatId = ((ChatActivity) context).getOpenChatId();
 
@@ -158,6 +181,10 @@ public class ChatItemFragment extends Fragment {
 		// if (getArguments() != null) {
 		// mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
 		// }
+		FaceFragment faceFragment = FaceFragment.Instance();
+		faceFragment.setListener(this);
+		getChildFragmentManager().beginTransaction().add(R.id.Container,faceFragment).commit();
+
 	}
 
 	@Override
@@ -181,6 +208,32 @@ public class ChatItemFragment extends Fragment {
 				return false;
 			}
 		});
+		message.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Container.setVisibility(View.GONE);
+				iv_face_checked.setVisibility(View.VISIBLE);
+				iv_face_normal.setVisibility(View.GONE);
+			}
+		});
+
+		iv_face_normal.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Container.setVisibility(View.VISIBLE);
+				iv_face_checked.setVisibility(View.VISIBLE);
+				iv_face_normal.setVisibility(View.GONE);
+				closeIME();
+			}
+		});
+		iv_face_checked.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Container.setVisibility(View.GONE);
+				iv_face_normal.setVisibility(View.VISIBLE);
+				iv_face_checked.setVisibility(View.GONE);
+			}
+		});
 
 		sendButton.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -188,6 +241,7 @@ public class ChatItemFragment extends Fragment {
 				send();
 			}
 		});
+		message.addTextChangedListener(watcher);
 
 		// recyclerView.addItemDecoration(new
 		// DividerItemDecoration(getActivity(),
@@ -208,7 +262,32 @@ public class ChatItemFragment extends Fragment {
 		refreshChatHistory();
 		return root;
 	}
+	private TextWatcher watcher = new TextWatcher() {
 
+		@Override
+		public void onTextChanged(CharSequence s, int start, int before, int count) {
+			// TODO Auto-generated method stub
+		}
+
+		@Override
+		public void beforeTextChanged(CharSequence s, int start, int count,
+		int after) {
+			// TODO Auto-generated method stub
+		}
+
+		@Override
+		public void afterTextChanged(Editable s) {
+			// TODO Auto-generated method stub
+			String s1 = message.getText().toString();
+			if(!s1.isEmpty()){
+				btn_more.setVisibility(View.INVISIBLE);
+				sendButton.setVisibility(View.VISIBLE);
+			}else {
+				btn_more.setVisibility(View.VISIBLE);
+				sendButton.setVisibility(View.INVISIBLE);
+			}
+		}
+	};
 	@Override
 	public void onDetach() {
 		mListener = null;
@@ -229,6 +308,67 @@ public class ChatItemFragment extends Fragment {
 
 		this.message.getText().clear();
 		(new SendMessageTask()).execute(body);
+	}
+	public  void closeIME() {
+		InputMethodManager imm = ( InputMethodManager ) context.getSystemService( Context.INPUT_METHOD_SERVICE );
+		if ( imm.isActive( ) ) {
+			imm.hideSoftInputFromWindow( message.getApplicationWindowToken( ) , 0 );
+		}
+	}
+	public void openIME() {
+		InputMethodManager imm = ( InputMethodManager ) context.getSystemService( Context.INPUT_METHOD_SERVICE );
+
+		imm.showSoftInput(message,InputMethodManager.SHOW_FORCED);
+	}
+
+	@Override
+	public void onEmojiDelete() {
+		String text = this.message.getText().toString();
+		if (text.isEmpty()) {
+			return;
+		}
+		if ("]".equals(text.substring(text.length() - 1, text.length()))) {
+			int index = text.lastIndexOf("[");
+			if (index == -1) {
+				int action = KeyEvent.ACTION_DOWN;
+				int code = KeyEvent.KEYCODE_DEL;
+				KeyEvent event = new KeyEvent(action, code);
+				this.message.onKeyDown(KeyEvent.KEYCODE_DEL, event);
+				displayTextView();
+				return;
+			}
+			Editable s =message.getText().delete(index, text.length());
+			displayTextView();
+			return;
+		}
+		int action = KeyEvent.ACTION_DOWN;
+		int code = KeyEvent.KEYCODE_DEL;
+		KeyEvent event = new KeyEvent(action, code);
+		this.message.onKeyDown(KeyEvent.KEYCODE_DEL, event);
+		displayTextView();
+	}
+
+	private void displayTextView() {
+		try {
+			Log.e("tanghongling","------"+this.message.getText().toString());
+			EmojiUtil.handlerEmojiText(this.message, this.message.getText().toString(),context);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void onEmojiClick(Emoji emoji) {
+		if (emoji != null) {
+			int index = message.getSelectionStart();
+			Editable editable = message.getEditableText();
+			if (index < 0) {
+				message.getEditableText().append(emoji.getContent());
+			} else {
+				message.getEditableText().insert(index, emoji.getContent());
+			}
+		}
+		displayTextView();
 	}
 
 	public interface ChatItemIterationListener {

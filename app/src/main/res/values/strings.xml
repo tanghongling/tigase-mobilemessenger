@@ -187,4 +187,7 @@
     <string name="notification_new_messages">%s new messages</string>
     <string name="notification_unread_conversations">%s unread conversations</string>
     <string name="pref_accounts_newaccount">Add new account</string>
+    <string name="face_recently">Recently</string>
+    <string name="face_Emoji">Emoji</string>
+    <string name="face_set_one">Default</string>
 </resources>

@@ -23,9 +23,17 @@
                     android:orientation="horizontal"
                     android:padding="5dp"
                     android:background="#ECEFF1"
-                    android:layout_alignParentBottom="true"
+        android:layout_above="@+id/emojPanel"
                     android:layout_centerHorizontal="true">
 
+        <TextView
+            android:id="@+id/chat_textview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:textColor="#383838"
+            android:textSize="16sp"
+            />
         <EditText android:id="@+id/messageText"
                   android:layout_width="match_parent"
                   android:layout_height="wrap_content"
@@ -34,16 +42,67 @@
                   android:minLines="1"
                   android:imeActionId="@+id/send"
                   android:imeActionLabel="Send"
-                  android:layout_toLeftOf="@+id/send_button"
-                  android:imeOptions="actionSend|flagNoExtractUi"
-                  android:autoLink="all"/>
+            android:imeOptions="actionSend|flagNoExtractUi"
+                  android:autoLink="all"
+            android:layout_toStartOf="@+id/btn_more" />
+				          <RelativeLayout
+            android:id="@+id/rl_face"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignRight="@+id/messageText"
+            android:layout_centerVertical="true"
+            >
+            <ImageView
+                android:id="@+id/iv_face_normal"
+                android:layout_width="24dip"
+                android:layout_height="24dip"
+                android:layout_margin="1dip"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ease_chatting_biaoqing_btn_normal"
+                android:visibility="visible" />
+
+            <ImageView
+                android:id="@+id/iv_face_checked"
+                android:layout_width="24dip"
+                android:layout_height="24dip"
+                android:layout_margin="1dip"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ease_chatting_biaoqing_btn_enable"
+                android:visibility="invisible" />
+
+        </RelativeLayout>
         <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
                 android:src="@drawable/ic_send_24dp"
                 android:id="@+id/send_button" android:layout_alignBottom="@+id/messageText"
-                android:layout_alignTop="@+id/messageText"/>
+                android:layout_alignTop="@+id/messageText"
+            android:visibility="invisible"/>
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:src="@drawable/ease_type_select_btn_nor"
+            android:id="@+id/btn_more" android:layout_alignBottom="@+id/messageText"
+            android:layout_marginLeft="2dip"
+            android:layout_alignTop="@+id/messageText" />
 
     </RelativeLayout>
+    <RelativeLayout android:id="@+id/emojPanel" android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="5dp"
+        android:background="#ECEFF1"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        >
+
+    <FrameLayout
+        android:id="@+id/Container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"></FrameLayout>
+    </RelativeLayout>
+
 </RelativeLayout>
